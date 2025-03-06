@@ -103,15 +103,40 @@
             <div class="dropdown-content">
                 <a href="#" id="google-calendar">Google Calendar</a>
                 <a href="#" id="outlook-calendar">Outlook</a>
-                <a href="#" id="apple-calendar">Apple Calendar</a>
+                <a href="#" id="apple-calendar">Apple Calendar (iOS)</a>
                 <a href="#" id="yahoo-calendar">Yahoo Calendar</a>
                 <a href="#" id="ics-download">Télécharger .ICS</a>
+                <a href="#" id="android-calendar">Android Calendar</a>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Détection du système d'exploitation pour afficher les options appropriées
+            function detectMobileOS() {
+                const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+                
+                // iOS detection
+                if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                    document.getElementById('apple-calendar').style.display = 'block';
+                    document.getElementById('android-calendar').style.display = 'none';
+                } 
+                // Android detection
+                else if (/android/i.test(userAgent)) {
+                    document.getElementById('apple-calendar').style.display = 'none';
+                    document.getElementById('android-calendar').style.display = 'block';
+                }
+                // Desktop or unknown mobile
+                else {
+                    document.getElementById('apple-calendar').style.display = 'block';
+                    document.getElementById('android-calendar').style.display = 'block';
+                }
+            }
+            
+            // Exécuter la détection au chargement
+            detectMobileOS();
+            
             // Informations de l'événement
             const eventDetails = {
                 title: 'Match de Padel',
@@ -180,11 +205,47 @@
             }
 
             // Pour Apple Calendar et téléchargement ICS
+            // Pour Apple Calendar (iOS) - ouvre directement dans l'app Calendrier sur iOS
             document.getElementById('apple-calendar').addEventListener('click', function(e) {
                 e.preventDefault();
-                window.open(generateICSFile(), '_blank');
+                // Sur iOS, cette méthode devrait déclencher l'application Calendrier native
+                const icsContent = generateICSFile();
+                window.location.href = icsContent;
+            });
+            
+            // Pour Android Calendar
+            document.getElementById('android-calendar').addEventListener('click', function(e) {
+                e.preventDefault();
+                // Pour Android, nous utilisons l'Intent pour le calendrier
+                const startDate = new Date(eventDetails.start);
+                const endDate = new Date(eventDetails.end);
+                
+                // Format dates for Android intent
+                const formatAndroidDate = (date) => {
+                    return date.getTime();
+                };
+                
+                const startTime = formatAndroidDate(startDate);
+                const endTime = formatAndroidDate(endDate);
+                
+                // Android Intent URL
+                const url = `content://com.android.calendar/events?title=${encodeURIComponent(eventDetails.title)}&description=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}&beginTime=${startTime}&endTime=${endTime}`;
+                
+                // Fallback to Google Calendar if direct intent doesn't work
+                if (/Android/i.test(navigator.userAgent)) {
+                    window.location.href = url;
+                    
+                    // Set a timeout to redirect to Google Calendar if the intent doesn't work
+                    setTimeout(function() {
+                        document.getElementById('google-calendar').click();
+                    }, 500);
+                } else {
+                    // Not on Android, fallback to Google Calendar
+                    document.getElementById('google-calendar').click();
+                }
             });
 
+            // Pour le téléchargement ICS (solution de secours)
             document.getElementById('ics-download').addEventListener('click', function(e) {
                 e.preventDefault();
                 const link = document.createElement('a');
@@ -198,5 +259,3 @@
     </script>
 </body>
 </html>
-
-Ajout du fichier HTML pour l'événement de padel
